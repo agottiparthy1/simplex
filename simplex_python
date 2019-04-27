@@ -1,0 +1,540 @@
+import numpy as np
+ 
+def simplex(A,b,c):
+    #lengths
+    a_shape = A.shape
+    b_shape = b.shape
+    c_shape = c.shape
+    a_row = a_shape[0]
+    a_col = a_shape[1]
+    b_row = b_shape[0]
+    c_size = c_shape[0]
+     
+    #final answer initialization
+    fin_ans = np.zeros((a_col,), dtype=np.float)
+    fin_ans_shape = fin_ans.shape
+    fin_ans_shape = fin_ans_shape[0]
+    feasibleFlag = False
+    boundedFlag = False
+     
+    #z initializations
+    zarr = 0
+    z = 0
+    z0 = 0
+     
+    #w setup
+    w = np.zeros((a_col,),dtype=np.float)
+    for i in range(0,a_row):
+        for j in range(0,a_col):
+            w[j] += A[i][j]     
+    for i in range(0,a_col):
+        if(w[i]!=0):
+            w[i] *= (-1)
+     
+    #non-artificial varibles declarations
+    no_real_vars = a_col
+    real_vars = []    
+     
+    #artificial variables declarations
+    no_art_vars = a_row
+    art_vars = []
+     
+    #remaining artificial variables
+    rem_art_var = []
+     
+    #l setup
+    l = []
+    for i in range(0,no_art_vars):
+        if not l:
+            l.append(a_col)
+        else:
+            l.append(l[i-1]+1)
+    l_shape = len(l)
+    art_vars = l
+     
+    #non-artificial variables set up
+    for i in range(0,no_real_vars):
+        real_vars.append(i)
+     
+    #z setup
+    for i in range(0,b_row):
+        zarr+=b[i]
+    z = zarr[0]
+    z *= (-1)
+     
+    #Convert to canonical form
+    def simplex3(A,b,c,z0,z,w,l):
+        #artificial variables local declarations
+        no_art_vars = a_row
+        art_vars = []
+         
+        #remaining artificial variables
+        rem_art_var = []
+        count=a_col-1
+        for i in range(0,a_row):
+            count+=1
+            art_vars.append(count)        
+ 
+        #main simplex Algorithm
+        def simplex2(A,b,c,z0,l,w,z):
+            #final answer initialization
+            fin_ans = np.zeros((a_col,), dtype=np.float)
+            fin_ans_shape = fin_ans.shape
+            fin_ans_shape = fin_ans_shape[0]
+             
+            #Simplex Pivot Function
+            def pivot2(A, b, t):
+                #Concatenating all arrays and matrices into one matrix D
+                B = A.copy() 
+                C = np.c_[B,b]
+                R = np.append(c,z0)
+                D = np.concatenate((C,[R]),axis=0)
+                 
+                #Number of rows and columns in D
+                D_shape = D.shape
+                nrow = D_shape[0]
+                ncol = D_shape[1]
+                 
+                #if pivot point is not 1, scale it down to 1
+                if(D[t]!=1):
+                    D[t[0],:] *= (1./D[t])
+                 
+                #reduce non-pivotal rows using the pivot row
+                for i in range(0,nrow):
+                    if(t[0]!=i):
+                        D[i,:] -= (D[i,t[1]]*D[t[0],:])       
+                         
+                #parse steps to split D into A, b, c, and z0
+                b_upd = D[:,ncol-1]
+                b_upd = np.delete(b_upd,b_row,0)
+                b_upd = b_upd.reshape((b_upd.shape[0],1))
+                r = D[nrow-1,:]
+                A_upd = np.delete(D,-1,1)
+                c_upd = A_upd[nrow-1,:]
+                A_upd = np.delete(A_upd,-1,0)
+                z0_upd = r[-1]
+                 
+                return A_upd,b_upd,c_upd,z0_upd
+ 
+            #Main loop
+            while True:
+                #Temporary variables
+                tempt = (0,0) 
+                tempc = 0
+                minim = 0
+                minimpos = 0
+                minimpost = 0
+                mc = 0
+                tempi = 0
+                ltempc= 0
+                ltempr = 0
+                tempj = 0
+ 
+                #minimum negative value in c
+                for i in range(0,c_size):
+                    if((c[i]<0) and (mc>c[i])):
+                        mc = c[i]
+                        tempi = i
+                        break
+ 
+                #pivot column
+                ltempc = tempi
+ 
+                #minimum value achieved
+                if(mc==0):
+                    for i in range(0,fin_ans_shape):
+                        while(tempj!=b_row):
+                            if(l[tempj] in real_vars):
+                                fin_ans[l[tempj]] = b[tempj]
+                                tempj += 1
+                                break
+                            else:
+                                tempj+=1
+                                break
+                        if(tempj==b_row):
+                            break
+                    z0 = round(z0,2)
+                    z0 *= (-1)
+                     
+                    return (True,True,z0,fin_ans)  
+ 
+               #Objective is unbounded
+                for i in range(0,c_size):
+                    tempc=0
+                    if(c[i]<0):
+                        for j in range(0,a_row):
+                            if(A[j][i]<=0): if(tempc==a_row-1): end = True tempc+=1 else: end = False break if(end==False): break q = 0 for i in w: if i>0:
+                        feasibleFlag = False
+                        boundedFlag = False
+                        break
+                    else:
+                        q+=1
+                if(q==a_col) and (z==0):
+                    feasibleFlag = True
+                    boundedFlag = False
+                if(end==True):
+                    return (feasibleFlag,boundedFlag,None,None)
+ 
+                #minimum value and t calculation for pivot set up using Bland's Rule
+                else:
+                    for i in range(0,a_row):
+                        if((A[i][tempi])<=0):
+                            continue
+                        else:
+                            if(b[i]==0):
+                                minimpos = i
+                                tempt = (minimpos,tempi)
+                                ltempr = j
+                                break
+                            elif(minim==b[i]/(A[i][tempi])):
+                                if(minimpos<i): pass elif(minimpos>i):
+                                    minimpos = i
+                                    tempt = (minimpos,tempi)
+                                    ltempr = j
+                            elif(minim>b[i]/(A[i][tempi])):
+                                minim = b[i]/(A[i][tempi])
+                                minimpos = i
+                                tempt = (minimpos,tempi)
+                                ltempr = j
+                            elif(minim==0 and b[i]/(A[i][tempi])>0):
+                                    minim = b[i]/(A[i][tempi])
+                                    minimpos = i
+                                    tempt = (minimpos,tempi)
+                                    ltempr = j
+ 
+                #set l value            
+                for i in range(0,l_shape):
+                    if(i == tempt[0]):
+                        l[i] = ltempc 
+                 
+                #pivot and update A, b, c, z0
+                A,b,c,z0 = pivot2(A,b,tempt)
+         
+        #Pivot function used when bringing problem to canonical form
+        def pivot(A, b, t):
+            #Concatenating all arrays and matrices into one matrix D
+            B = A.copy() 
+            C = np.c_[B,b]
+            R = np.append(c,z0)
+            S = np.append(w,z)
+            D = np.concatenate((C,[R]),axis=0)
+            D = np.concatenate((D,[S]),axis=0)
+             
+            #Number of rows and columns in D
+            D_shape = D.shape
+            nrow = D_shape[0]
+            ncol = D_shape[1]
+            r = D[t]
+            l = t[1]
+             
+            #if pivot point is not 1, scale it down to 1
+            if(r!=1):
+                for i in range(0,nrow):
+                    if(i==t[0]):
+                        for j in range(0,ncol):
+                            if(D[i][j]!=0):
+                                D[i][j] *= (1./r)
+                                 
+            #reduce non-pivotal rows using the pivot row
+            for i in range(0,nrow):
+                if(t[0]!=i):
+                    D[i,:] -= (D[i,t[1]]*D[t[0],:])
+ 
+            #parse steps to split D into A, b, c, w, z and z0
+            b_upd = D[:,ncol-1]
+            b_upd = np.delete(b_upd,b_row,0)
+            b_upd = np.delete(b_upd,-1,0)
+            b_upd = b_upd.reshape((b_upd.shape[0],1))
+            r = D[nrow-2,:]
+            s = D[nrow-1,:]
+            A_upd = np.delete(D,-1,1)
+            c_upd = A_upd[nrow-2,:]
+            w_upd = A_upd[nrow-1,:]
+            A_upd = np.delete(A_upd,-1,0)
+            A_upd = np.delete(A_upd,-1,0)
+            z0_upd = r[-1]
+            z_upd = s[-1]
+             
+            return A_upd,b_upd,c_upd,z0_upd,z_upd,w_upd
+         
+        #Function to check if there are any artificial variables left in basis
+        def artVarRem(A,b,c,z0,z,w):
+            #Temporary variables to find row and column
+            tr = -1
+            tc = 0
+            for i in range(0,l_shape):
+                for j in rem_art_var:
+                    if(l[i]==j):
+                        clean = j
+                        tr = i
+                        rem_art_var.remove(j)
+                        break
+                if(tr==i):
+                    break
+            val = 0
+            for i in range(0,a_row):
+                if(i==tr):
+                    for j in range(0,a_col):
+                        if(A[i][j]<0):
+                            val = A[i][j]
+                            tc = j
+                            break
+                    if(val<0):
+                        break       
+            tempt = (tr,tc)
+            #pivot on non-zero coefficient in Aij in the artificial variable
+            A,b,c,z0,z,w = pivot(A,b,tempt)
+             
+            return tr,tc,A,b,c,z0,z,w
+         
+        #Function to check if there is an artificial variable in basis with all zeros
+        def checkZeroArt(l,rem_art_var):
+            y = []
+            zer = False
+            for i in range(0,len(l)):
+                for j in rem_art_var:
+                    if(l[i]==j):
+                        y.append(i)
+            for i in range(0,a_row):
+                for k in y:
+                    if(i==k):
+                        for j in range(0,a_col):
+                            if(A[i][j]==0):
+                                zer = True
+                            else:
+                                zer = False
+                                break
+            return zer
+         
+        #Main loop
+        while True:
+            #Temporary variables
+            tempt = (0,0) 
+            tempc = 0
+            minim = 0
+            minimpos = 0
+            minimpost = 0
+            mw = 0
+            mwpos = 0
+            tempi = 0
+            ltempc= 0
+            ltempr = 0
+            tempj = 0
+ 
+            #minimum negative value in w
+            for i in range(0,c_size):
+                if((w[i]<0) and (mw>w[i])):
+                    mw = w[i]
+                    tempi = i
+                    break
+ 
+            #pivot column
+            ltempc = tempi
+             
+            #not yet in canonical form. apply simplex to reduce w
+            if(mw<0):
+                #minimum value and t calculation for pivot set up using Bland's Rule
+                for i in range(0,a_row):
+                    if((A[i][tempi])<=0): continue else: if(b[i]==0): if(A[i][tempi]>0):
+                                minimpos = i
+                                tempt = (minimpos,tempi)
+                                break
+                        elif(minim==b[i]/(A[i][tempi])):
+                            if(minimpos<i): pass elif(minimpos>i):
+                                minimpos = i
+                                tempt = (minimpos,tempi)
+                        elif(minim>b[i]/(A[i][tempi])):
+                            minim = b[i]/(A[i][tempi])
+                            minimpos = i
+                            tempt = (minimpos,tempi)
+                        elif(minim==0 and b[i]/(A[i][tempi])>0):
+                                minim = b[i]/(A[i][tempi])
+                                minimpos = i
+                                tempt = (minimpos,tempi)
+                #set l value            
+                for i in range(0,l_shape):
+                    if(tempt[0]==i):
+                        l[i] = ltempc
+                         
+                #pivot and update
+                A,b,c,z0,z,w = pivot(A,b,tempt)
+             
+            #if no more values in w less than 0
+            elif(mw==0):  
+                #find remaining artificial variables
+                for i in l:
+                    for j in art_vars:
+                        if(i!=j):
+                            pass
+                        else:
+                            rem_art_var.append(i)
+ 
+                #no artificial variables remain
+                if(len(rem_art_var)==0):
+                    #problem is in canonical form apply simplex to A,b,c with l
+                    feasibleFlag,boundedFlag,fin_ans,z0 = simplex2(A,b,c,z0,l,w,z)     
+                    return (feasibleFlag,boundedFlag,fin_ans,z0)
+ 
+                #artificial variables remain
+                else:
+                    x = 0
+                    #loop to check if there are any negative numbers in c if there are artificial variables
+                    while rem_art_var:
+                        f=0
+                        for i in c:
+                            if i<0:
+                                break
+                            else:
+                                f+=1
+                                 
+                        #No feasible solution exists
+                        if(f==a_col):
+                            return (False,False,None,None)
+                        ct = 0
+                        for i in range(0,len(rem_art_var)):
+                            zer = checkZeroArt(l,rem_art_var)
+                            if(zer == True):
+                                ct += 1
+                            else:
+                                continue
+                                 
+                        #problem is in canonical form apply simplex to A,b,c,with l
+                        if(ct==len(rem_art_var)):
+                            feasibleFlag,boundedFlag,fin_ans,z0 = simplex2(A,b,c,z0,l,w,z)
+                            return (feasibleFlag,boundedFlag,fin_ans,z0)             
+                         
+                        #check to see if any artificial variables are left                   
+                        tr,tc,A,b,c,z0,z,w = artVarRem(A,b,c,z0,z,w)
+                        l[tr] = tc
+                         
+                    #problem is in canonical form apply simplex to A,b,c,with l
+                    feasibleFlag,boundedFlag,fin_ans,z0 = simplex2(A,b,c,z0,l,w,z)
+                    return (feasibleFlag,boundedFlag,fin_ans,z0)
+     
+    return simplex3(A,b,c,z0,z,w,l)
+    
+    import numpy as np
+import numpy.linalg as la
+ 
+def diff_is_zero(z1,z2):
+    try:
+        if np.abs(z1-z2) < 1e-10:
+            return True
+        else:
+            return False
+    except:
+        return False
+ 
+def norm_diff_is_zero(y1,y2):
+    try:
+        if la.norm(y1-y2) < 1e-10:
+            return True
+        else:
+            return False
+    except:
+        return False
+     
+def testcase(tup,correctVal,k):
+    if tup[0] == correctVal[0] and tup[1] == correctVal[1]:
+        if correctVal[1] == False and tup[2] is None and tup[3] is None:
+            print('Test case {} Successful :-D'.format(k))
+            return 1
+        elif diff_is_zero(tup[2],correctVal[2]) and norm_diff_is_zero(tup[3],correctVal[3]):
+            print('Test case {} Successful :-D'.format(k))
+            return 1
+    print('Test case {} Unsuccesful :-/'.format(k))
+    return 0
+ 
+cases_passed = 0    
+     
+ 
+#######################Case 1
+     
+A = np.array([[-6,0,1,-2,2],[3,1,-1,8,1]],dtype=np.float)
+b = np.array([[6],[9]],dtype=np.float)
+c = np.array([-4,1,1,7,3],dtype=np.float)
+ 
+ 
+ 
+tup = simplex(A,b,c)
+correctVal = (True,True,14,np.array([1,0,0,0,6],dtype=np.float))
+cases_passed += testcase(tup,correctVal,1)
+ 
+ 
+#####################Case 2
+ 
+A = np.array([[1,-2,-3,-2],[1,-1,2,1]],dtype=np.float)
+b = np.array([[3],[11]],dtype=np.float)
+c = np.array([2,-3,1,1],dtype=np.float)
+ 
+ 
+ 
+tup = simplex(A,b,c)
+correctVal = (True,True,14,np.array([19,8,0,0],dtype=np.float))
+cases_passed += testcase(tup,correctVal,2)
+ 
+#######################Case 3
+ 
+A = np.array([[-1,2,1,1,0],[-1,0,2,0,-1],[1,-1,2,0,0]],dtype=np.float)
+b = np.array([[1],[4],[4]],dtype=np.float)
+c = np.array([1,1,1,0,0],dtype=np.float)
+ 
+ 
+ 
+tup = simplex(A,b,c)
+correctVal = (False,False,None,None)
+cases_passed += testcase(tup,correctVal,3)
+ 
+########################Case 4
+ 
+A = np.array([[1,1,-2,1,0],[-3,1,2,0,1]],dtype=np.float)
+b = np.array([[7],[3]],dtype=np.float)
+c = np.array([0,-2,-1,0,0],dtype=np.float)
+ 
+ 
+ 
+tup = simplex(A,b,c)
+correctVal = (True,False,None,None)
+cases_passed += testcase(tup,correctVal,4)
+ 
+#####################Case 5
+ 
+A = np.array([[1,-2,3,1],[-1,1,2,2./3]],dtype=np.float)
+b = np.array([[6],[4]],dtype=np.float)
+c = np.array([2,-1,1,0],dtype=np.float)
+ 
+ 
+ 
+tup = simplex(A,b,c)
+correctVal = (True,True,0,np.array([0,0,0,6],dtype=np.float))
+cases_passed += testcase(tup,correctVal,5)
+ 
+###########################Case 6
+ 
+A = np.array([[1,2,0,1],[2,1,1,0],[-1,4,-2,3]],dtype=np.float)
+b = np.array([[20],[10],[40]],dtype=np.float)
+c = np.array([1,4,3,2],dtype=np.float)
+ 
+ 
+ 
+tup = simplex(A,b,c)
+correctVal = (True,True,35,np.array([5,0,0,15],dtype=np.float))
+cases_passed += testcase(tup,correctVal,6)
+ 
+############################Case 7
+ 
+A = np.array([[1,0,0,1./4,-8,-1,9],[0,1,0,1./2,-12,-1./2,3],[0,0,1,0,0,1,0]],dtype=np.float)
+b = np.array([[0],[0],[1]],dtype=np.float)
+c = np.array([0,0,0,-3./4,20,-1./2,6],dtype=np.float)
+ 
+ 
+ 
+tup = simplex(A,b,c)
+correctVal = (True,True,-1.25,np.array([.75,0,0,1,0,1,0],dtype=np.float))
+cases_passed += testcase(tup,correctVal,7)
+ 
+percent_passed = 100*cases_passed/7.
+points_earned = int(50*cases_passed/7.)
+ 
+print('You passed {:.2f}% of the test cases and earned {} out of 50 points'.format(percent_passed,points_earned))
+
